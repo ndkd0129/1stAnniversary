@@ -21,6 +21,14 @@ Chào mừng bạn đến với ứng dụng Tương tác 3D Noel & Anniversary!
     -   **Hiệu ứng:** Màn hình chuyển sang nền tối, chữ "Happy 1st Anniversary" & tên "Khâyy Du ❤️ Mỹ Thoee" hiện ra cùng pháo hoa.
     -   **Thoát:** Nhấn **Enter** hoặc chạm vào màn hình.
 
+### Điều khiển bằng Cử chỉ (AI Hand Tracking)
+Nếu bạn có Camera (Webcam), bạn có thể điều khiển bằng tay không chạm:
+-   **Giơ tay và di chuyển:** Xoay hũ cầu tuyết theo hướng tay.
+-   **✌️ Giơ ngón tay chữ V (Victory):** Chuyển đổi giữa Chế độ Hũ Tuyết và Xem Ảnh.
+-   **👌 Chụm ngón cái và trỏ (Pinch):** Phóng to / Soi kỹ ảnh.
+-   **✋ Xòe bàn tay (Open Palm):** Thoát chế độ xem / Thu nhỏ / Tắt pháo hoa.
+-   **✊ Nắm tay (Fist):** Kích hoạt **Chế độ Pháo Hoa** (chỉ có tác dụng khi đang xem ảnh).
+
 ---
 
 ## 2. Hướng Dẫn Tùy Biến (Dành cho Admin/Dev)
