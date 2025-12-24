@@ -477,7 +477,7 @@
 
         const ENABLE_POST_PROCESSING = true;
 
-        const TOTAL_PHOTOS = 20;
+        const TOTAL_PHOTOS = 28;
         const PARTICLE_RATIO = 1.0; // Reduced from 2.0 based on user feedback
 
         const AI_SKIP_FRAMES = 2;
@@ -685,9 +685,9 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
+            renderer.toneMappingExposure = 0.9;
 
             container.appendChild(renderer.domElement);
 
@@ -698,7 +698,7 @@
 
                 const bloomRes = new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2);
                 bloomPass = new UnrealBloomPass(bloomRes, 1.5, 0.4, 0.85);
-                bloomPass.threshold = 0.85; bloomPass.strength = 0.5; bloomPass.radius = 0.5; // Softer bloom
+                bloomPass.threshold = 0.9; bloomPass.strength = 0.3; bloomPass.radius = 0.3; // Softer bloom
                 composer.addPass(bloomPass);
             }
 
@@ -806,20 +806,75 @@
         function loadPolaroidTextures() {
             const imgLoader = new THREE.ImageLoader(); imgLoader.crossOrigin = 'anonymous';
             const cacheBuster = Date.now();
+            const extensions = ['.png', '.jpg', '.jpeg'];
+
             for (let i = 1; i <= TOTAL_PHOTOS; i++) {
-                const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 300; const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 256, 300); ctx.fillStyle = '#eee'; ctx.fillRect(15, 15, 226, 226);
-                const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; polaroidTextures.push(texture);
-                const path = `./images/${i}.png?v=${cacheBuster}`;
-                imgLoader.load(path, (image) => {
-                    ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 256, 300); ctx.drawImage(image, 15, 15, 226, 226);
-                    ctx.fillStyle = '#111'; ctx.font = '24px Pinyon Script'; ctx.textAlign = 'center'; ctx.fillText(`Moment ${i}`, 128, 275);
-                    texture.needsUpdate = true;
-                }, undefined, () => {
-                    ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 256, 300); ctx.fillStyle = '#ffeebb'; ctx.fillRect(15, 15, 226, 226);
-                    ctx.fillStyle = '#800000'; ctx.font = 'bold 20px Cinzel'; ctx.textAlign = 'center'; ctx.fillText('NO IMAGE', 128, 120);
-                    texture.needsUpdate = true;
-                });
+                // High Quality Canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024; canvas.height = 1200; // 4x Resolution
+                const ctx = canvas.getContext('2d');
+
+                // Draw Base Polaroid
+                ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 1024, 1200);
+
+                // Photo Placeholder Area (Dark)
+                ctx.fillStyle = '#eee'; ctx.fillRect(60, 60, 904, 904);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.generateMipmaps = true;
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                polaroidTextures.push(texture);
+
+                // Try loading image with different extensions
+                const loadNextExt = (extIndex) => {
+                    if (extIndex >= extensions.length) {
+                        // All failed: Draw "NO IMAGE"
+                        ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 1024, 1200);
+                        ctx.fillStyle = '#ffeebb'; ctx.fillRect(60, 60, 904, 904);
+                        ctx.fillStyle = '#800000'; ctx.font = 'bold 80px Cinzel'; ctx.textAlign = 'center';
+                        ctx.fillText('NO IMAGE', 512, 550);
+                        texture.needsUpdate = true;
+                        return;
+                    }
+
+                    const path = `./images/${i}${extensions[extIndex]}?v=${cacheBuster}`;
+                    imgLoader.load(path, (image) => {
+                        // Success: Draw Image with "COVER" strategy
+                        ctx.fillStyle = '#fdfdfd'; ctx.fillRect(0, 0, 1024, 1200);
+
+                        const frameW = 904, frameH = 904;
+                        const frameX = 60, frameY = 60;
+
+                        // Calculate Scale for Cover (Fill)
+                        const scale = Math.max(frameW / image.width, frameH / image.height);
+                        const drawW = image.width * scale;
+                        const drawH = image.height * scale;
+                        const drawX = frameX + (frameW - drawW) / 2;
+                        const drawY = frameY + (frameH - drawH) / 2;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(frameX, frameY, frameW, frameH);
+                        ctx.clip();
+                        ctx.drawImage(image, drawX, drawY, drawW, drawH);
+                        ctx.restore();
+
+                        // High Res Caption
+                        ctx.fillStyle = '#111';
+                        ctx.font = '96px Pinyon Script';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`Moment ${i}`, 512, 1100);
+
+                        texture.needsUpdate = true;
+                    }, undefined, () => {
+                        loadNextExt(extIndex + 1); // Try next extension
+                    });
+                };
+
+                loadNextExt(0); // Start loading
             }
         }
 
